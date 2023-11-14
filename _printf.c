@@ -3,82 +3,49 @@
 #include <unistd.h>
 
 /**
- * _printf - Custom printf function with limited functionality
- * @format: Format string containing conversion specifiers
+ * _printf - Custom printf function
+ * @format: Format string containing format specifiers
+ *
  * Return: Number of characters printed (excluding null byte)
  */
 int _printf(const char *format, ...)
 {
+	int i, printed_chars = 0, buff_ind = 0;
+	int flags, width, precision, size;
+	char buffer[BUFF_SIZE];
+	va_list args;
+
 	if (format == NULL)
 		return (-1);
 
-	va_list args;
-	int count = 0;
-
 	va_start(args, format);
 
-	while (*format != '\0')
+	for (i = 0; format && format[i] != '\0'; i++)
 	{
-		if (*format == '%')
+		if (format[i] != '%')
 		{
-			format++;
-			switch (*format)
-			{
-			case 'c':
-				count += _putchar(va_arg(args, int));
-				break;
-			case 's':
-				count += _puts(va_arg(args, char *));
-				break;
-			case '%':
-				count += _putchar('%');
-				break;
-			default:
-				count += _putchar('%');
-				count += _putchar(*format);
-			}
+			buffer[buff_ind++] = format[i];
+			if (buff_ind == BUFF_SIZE)
+				print_buffer(buffer, &buff_ind);
+			printed_chars++;
 		}
 		else
 		{
-			count += _putchar(*format);
+			print_buffer(buffer, &buff_ind);
+			flags = get_flags(format, &i);
+			width = get_width(format, &i, args);
+			precision = get_precision(format, &i, args);
+			size = get_size(format, &i);
+			++i;
+			printed_chars += handle_print(format, &i, args, buffer,
+					flags, width, precision, size);
 		}
-
-		format++;
 	}
+
+	print_buffer(buffer, &buff_ind);
 
 	va_end(args);
 
-	return (count);
-}
-
-/**
- * _putchar - Writes a character to stdout
- * @c: Character to write
- * Return: 1 on success, -1 on error
- */
-int _putchar(char c)
-{
-	return (write(1, &c, 1));
-}
-
-/**
- * _puts - Writes a string to stdout
- * @str: String to write
- * Return: Number of characters written
- */
-int _puts(char *str)
-{
-	if (str == NULL)
-		str = "(null)";
-
-	int count = 0;
-
-	while (*str != '\0')
-	{
-		count += _putchar(*str);
-		str++;
-	}
-
-	return (count);
+	return (printed_chars);
 }
 
