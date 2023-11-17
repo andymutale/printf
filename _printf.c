@@ -1,76 +1,70 @@
 #include <stdarg.h>
+#include <stdio.h>
 #include <unistd.h>
 
-#define BUFFER_SIZE 1024
+int _printf(const char *format, ...)
+{
+ va_list args;
+ va_start(args, format);
 
-// ... (Your helper functions here) ...
+ char buffer[-1];
+ int buffer_index = 0;
 
-void print_number(char *buffer, int *index, int n, int base, int uppercase) {
-    if (n / base) {
-        print_number(buffer, index, n / base, base, uppercase);
-    }
-    char c = n % base < 10 ? '0' + n % base : (uppercase ? 'A' : 'a') + n % base - 10;
-    add_to_buffer(buffer, index, c);
-}
-
-int _printf(const char *format, ...) {
-    va_list args;
-    int count = 0;
-    char buffer[BUFFER_SIZE];
-    int buffer_index = 0;
-
-    va_start(args, format);
-
-    for (int i = 0; format[i] != '\0'; i++) {
-        if (format[i] != '%') {
-            add_to_buffer(buffer, &buffer_index, format[i]);
-            count++;
-        } else {
-            i++;
-            // Handle flags...
-            // Handle length modifiers...
-            // Handle field width...
-            // Handle precision...
-            switch (format[i]) {
-                case 'd':
-                case 'i': {
-                    int n = va_arg(args, int); // For normal
-                    // Calculate the number of digits in n...
-                    int digits = /* ... */;
-                    char fill = flag_zero && precision == -1 ? '0' : ' ';
-                    if (!flag_minus) {
-                        for (int j = digits; j < width; j++) {
-                            add_to_buffer(buffer, &buffer_index, fill);
-                            count++;
-                        }
-                    }
-                    if (n < 0) {
-                        add_to_buffer(buffer, &buffer_index, '-');
-                        n = -n;
-                    } else if (flag_plus) {
-                        add_to_buffer(buffer, &buffer_index, '+');
-                    } else if (flag_space) {
-                        add_to_buffer(buffer, &buffer_index, ' ');
-                    }
-                    print_number(buffer, &buffer_index, n, 10, 0);
-                    if (flag_minus) {
-                        for (int j = digits; j < width; j++) {
-                            add_to_buffer(buffer, &buffer_index, fill);
-                            count++;
-                        }
-                    }
-                    break;
-                }
-                // Handle other specifiers...
-                default:
-                    break;
-            }
+ for (int i = 0; format[i] != '\0'; i++)
+ {
+ if (format[i] == '%')
+ {
+  i++;
+  switch (format[i])
+  {
+      case 'R':
+      {
+        char *str = va_arg(args, char *);
+        while (*str)
+        {
+          if ((*str >= 'a' && *str <= 'm') || (*str >= 'A' && *str <= 'M'))
+          {
+            buffer[buffer_index++] = *str + 13;
+          }
+          else if ((*str >= 'n' && *str <= 'z') || (*str >= 'N' && *str <= 'Z'))
+          {
+            buffer[buffer_index++] = *str - 13;
+          }
+          else
+          {
+            buffer[buffer_index++] = *str;
+          }
+          if (buffer_index == 1024)
+          {
+            write(1, buffer, buffer_index);
+            buffer_index = 0;
+          }
+          str++;
         }
-    }
+        break;
+      }
+      // ... other cases ...
+      default:
+        break;
+  }
+ }
+ else
+ {
+  buffer[buffer_index++] = format[i];
+ }
 
-    flush_buffer(buffer, &buffer_index);
+ if (buffer_index == 1024)
+ {
+  write(1, buffer, buffer_index);
+  buffer_index = 0;
+ }
+ }
 
-    va_end(args);
+ if (buffer_index > 0)
+ {
+ write(1, buffer, buffer_index);
+ }
 
-    return count;
+ va_end(args);
+ return buffer_index;
 }
