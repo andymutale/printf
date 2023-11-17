@@ -1,59 +1,76 @@
-#include "main.h"
+#include <stdarg.h>
+#include <unistd.h>
 
-void print_buff(char buff[], int *buff_index);
+#define BUFFER_SIZE 1024
 
-/**
- * _printf - Printf function
- * @format: format.
- * Return: Printed chars.
- */
-int _printf(const char *format, ...)
-{
-    int i, printed_chars = 0, buff_index = 0;
-    va_list list;
-    char buffer[BUFF_SIZE];
+// ... (Your helper functions here) ...
 
-    if (format == NULL)
-        return (-1);
+void print_number(char *buffer, int *index, int n, int base, int uppercase) {
+    if (n / base) {
+        print_number(buffer, index, n / base, base, uppercase);
+    }
+    char c = n % base < 10 ? '0' + n % base : (uppercase ? 'A' : 'a') + n % base - 10;
+    add_to_buffer(buffer, index, c);
+}
 
-    va_start(list, format);
+int _printf(const char *format, ...) {
+    va_list args;
+    int count = 0;
+    char buffer[BUFFER_SIZE];
+    int buffer_index = 0;
 
-    for (i = 0; format && format[i] != '\0'; i++)
-    {
-        if (format[i] != '%')
-        {
-            buffer[buff_index++] = format[i];
-            if (buff_index == BUFF_SIZE)
-                print_buff(buffer, &buff_index);
-            printed_chars++;
-        }
-        else
-        {
-            print_buff(buffer, &buff_index);
+    va_start(args, format);
+
+    for (int i = 0; format[i] != '\0'; i++) {
+        if (format[i] != '%') {
+            add_to_buffer(buffer, &buffer_index, format[i]);
+            count++;
+        } else {
             i++;
-            printed_chars += handle_print(format, &i, list, buffer);
-            if (printed_chars == -1)
-                return (-1);
+            // Handle flags...
+            // Handle length modifiers...
+            // Handle field width...
+            // Handle precision...
+            switch (format[i]) {
+                case 'd':
+                case 'i': {
+                    int n = va_arg(args, int); // For normal
+                    // Calculate the number of digits in n...
+                    int digits = /* ... */;
+                    char fill = flag_zero && precision == -1 ? '0' : ' ';
+                    if (!flag_minus) {
+                        for (int j = digits; j < width; j++) {
+                            add_to_buffer(buffer, &buffer_index, fill);
+                            count++;
+                        }
+                    }
+                    if (n < 0) {
+                        add_to_buffer(buffer, &buffer_index, '-');
+                        n = -n;
+                    } else if (flag_plus) {
+                        add_to_buffer(buffer, &buffer_index, '+');
+                    } else if (flag_space) {
+                        add_to_buffer(buffer, &buffer_index, ' ');
+                    }
+                    print_number(buffer, &buffer_index, n, 10, 0);
+                    if (flag_minus) {
+                        for (int j = digits; j < width; j++) {
+                            add_to_buffer(buffer, &buffer_index, fill);
+                            count++;
+                        }
+                    }
+                    break;
+                }
+                // Handle other specifiers...
+                default:
+                    break;
+            }
         }
     }
 
-    print_buff(buffer, &buff_index);
+    flush_buffer(buffer, &buffer_index);
 
-    va_end(list);
+    va_end(args);
 
-    return (printed_chars);
+    return count;
 }
-
-/**
- * print_buffer - Prints the contents of the buffer if it exist
- * @buffer: Array of chars
- * @buff_ind: Index at which to add next char, represents the length.
- */
-void print_buff(char buffer[], int *buff_index)
-{
-    if (*buff_index > 0)
-        write(1, &buffer[0], *buff_index);
-
-    *buff_index = 0;
-}
-
